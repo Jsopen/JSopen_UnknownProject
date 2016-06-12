@@ -1,7 +1,7 @@
-"""
+/*
 JSOPEN Node Option Parser
 Copyright: Kevin 'Kassimo' Qian
-"""
+*/
 
 'use strict'
 
@@ -112,6 +112,11 @@ function Jo_get_obj_by_key(jo, key) {
 //Find next string index from stdin array
 function Jo_find_next_string_index(arr, curr) {
 	for (var i = curr+1; i < arr.length; i++) {
+		//Avoid null exception (due to read strings changing to null)
+		if (arr[i] === null) {
+			continue;
+		}
+		
 		if (arr[i][1] === false) {
 			return i;
 		}
@@ -120,12 +125,22 @@ function Jo_find_next_string_index(arr, curr) {
 	return -1;
 }
 
+//Get the pipe from the stdin
+function Jo_get_pipe() {
+	process.stdin.resume();
+	process.stdin.setEncoding('utf8');
+	process.stdin.on('data', function(data) {
+		return data;
+	});
+	return null;
+}
+
 ////////////////////
 //EXTERNAL FUNCTIONS
 ////////////////////
 
 //Initialize Jsopen parser
-function Jo() {
+function Jo(info, is_verbose) {
 	//VERB: show warning messages. Verbose is true by default
 	this.verb = true;
 	//MAN: information of this file. Undefined when initialized
@@ -135,10 +150,10 @@ function Jo() {
 	
 	var _len = arguments.length;
 	if (_len >= 1) {
-		this.verb = Boolean(arguments[0]);
+		var _temp = String(arguments[0]);
+		this.man = _temp;
 		if (_len >= 2) {
-			var _temp = String(arguments[1]);
-			this.man = _temp;
+			this.verb = Boolean(arguments[1]);
 		}
 	} 
 	if (_len > 2) {
@@ -257,7 +272,10 @@ Jo.prototype.parse = function () {
 	} else {
 		stdin.splice(0, 1);
 	}
-	console.log(stdin);
+	
+	//////TESTING//////
+	//console.log(stdin);
+	//////TESTING//////
 	
 	//This flag will be turned on when double dash is detected
 	var double_dash_flag = false;
@@ -301,8 +319,16 @@ Jo.prototype.parse = function () {
 			} else if (item.match(/^-$/)) {
 				//Pipe
 				var index = stdin.indexOf(item);
+				/*
 				//PIPE becomes a special command
 				stdin[index] = ["|", true]; 
+				*/
+				//Directly replace the data with the pipe data;
+				var pipe_data = Jo_get_pipe();
+				if (pipe_data === null) {
+					Jo_write_error("pipe data not found");
+				}
+				stdin[index] = [String(pipe_data), false];
 			} else if (item === "--") {
 				//Cancel special meaning of leading - in the next item
 				ddf_2b_true = true;
@@ -337,11 +363,19 @@ Jo.prototype.parse = function () {
 		delete_index = stdin.indexOf(DELETER);
 	}
 	
-	console.log(stdin);
+	//////TESTING//////
+	//console.log(stdin);
+	//////TESTING//////
 	
 	var obj_ref;
 	for (var i = 0; i < stdin.length; i++) {
 		var item = stdin[i];
+		
+		//Avoid null exception (due to read strings changing to null)
+		if (item === null) {
+			continue;
+		}
+		
 		if (item[1] === true) {
 			obj_ref = Jo_get_obj_by_key(this, item[0]);
 			if (obj_ref.does === Jo.does.save_num) {
@@ -353,10 +387,30 @@ Jo.prototype.parse = function () {
 				if (num !== num) {
 					Jo_write_error("cannot parse number for save_num request\n");
 				}
+				
+				//Avoid collision with the "input" key of Jo.vars
+				if (obj_ref.dest === "input") {
+					Jo_write_error("cannot use the reserved word 'input' for destination\n");
+				}
+				
 				this.vars[obj_ref.dest] = num;
+				//Change the object to null so that the new round of input detection won't meddle in
+				stdin[next_index] = null;
 			} else if (obj_ref.does === Jo.does.save_true) {
+				
+				//Avoid collision with the "input" key of Jo.vars
+				if (obj_ref.dest === "input") {
+					Jo_write_error("cannot use the reserved word 'input' for destination\n");
+				}
+				
 				this.vars[obj_ref.dest] = true;
 			} else if (obj_ref.does === Jo.does.save_false) {
+				
+				//Avoid collision with the "input" key of Jo.vars
+				if (obj_ref.dest === "input") {
+					Jo_write_error("cannot use the reserved word 'input' for destination\n");
+				}
+				
 				this.vars[obj_ref.dest] = false;
 			} else if (obj_ref.does === Jo.does.save_str) {
 				var next_index = Jo_find_next_string_index(stdin, i);
@@ -364,14 +418,31 @@ Jo.prototype.parse = function () {
 					Jo_write_error("missing arguments for for option " + item[0] + "\n");
 				}
 				var str = String(stdin[next_index][0]);
+				
+				//Avoid collision with the "input" key of Jo.vars
+				if (obj_ref.dest === "input") {
+					Jo_write_error("cannot use the reserved word 'input' for destination\n");
+				}
+				
 				this.vars[obj_ref.dest] = str;
+				//Change the object to null so that the new round of input detection won't meddle in
+				stdin[next_index] = null;
 			}
+		}
+	}
+	
+	//Push the remaining inputs
+	for (var i = 0; i < stdin.length; i++) {
+		var item = stdin[i];
+		if (item !== null && item[1] === false) {
+			this.vars.input.push(item[0]);
 		}
 	}
 }
 
-//Add vars to Jo.vars so that they can later be accessed easily. e.g. var a = new Jo(), console.log(Jo.var["amy"]);
+//Add vars to Jo.vars so that they can later be accessed easily. e.g. var a = new Jo(), console.log(Jo.var["amy"]); WARNING: "input" is an reserved word!
 Jo.prototype.vars = {
+	input: []
 };
 
 
@@ -382,6 +453,51 @@ Jo.prototype.getpipe = function () {
 		return data;
 	});
 	return undefined;
+}
+
+//Check if a variable destination is used
+Jo.prototype.hasvar = function (var_name) {
+	if (0 in arguments) {
+		var_name = String(var_name);
+		if (this.vars[var_name] !== undefined) {
+			return true;
+		} else {
+			return false;
+		}
+	} else {
+		Jo_write_error("hasvar: name of var not provided!\n");
+	}
+	if (arguments.length > 1) {
+		if (this.verb) {
+			Jo_write_warning("hasvar: too many arguments, only the first argument is treated as var name\n");
+		}
+	}
+}
+
+Jo.prototype.help = function (entry1, entry2, entry3, etc) {
+	var help_arr = [];
+	if (arguments.length >= 1) {
+		for (var item of arguments) {
+			help_arr.push(String(item));
+		}
+	} else {
+		for (var item of this.opts) {
+			help_arr.push(item.keys[0]);
+		}
+	}
+	//HELP bar
+	process.stdout.write("--------HELP--------\n");
+	
+	//Examine each requested help entry and print
+	for (var item of help_arr) {
+		var entry = Jo_get_obj_by_key(this, item);
+		if (entry === undefined || entry === null) {
+			Jo_write_error("cannot get help info of unknown/nonexisting option\n");
+		}
+		var entry_key = String(entry.keys);
+		
+		process.stdout.write(entry_key + ": " + entry.help + "\n");
+	}
 }
 
 module.exports = Jo;
