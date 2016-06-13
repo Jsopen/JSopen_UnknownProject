@@ -15,9 +15,9 @@ parser.add(["-b", "--byte"], "dest_byte", jo.does.save_num, "print the first n b
 parser.parse();
 
 //jo.hasvar(var_name): examine if the var is used, meaning if corresponding option is called
-if (parser.hasvar("byte")) {
+if (parser.hasvar("dest_byte")) {
 	//retrieve the var from option destination
-	var byte = parser.vars["byte"];
+	var byte = parser.vars["dest_byte"];
 	//retrieve the inputs that are read but not stored in any destinations of any special options (will be presented in a list)
 	var input = parser.vars.input;
 }
