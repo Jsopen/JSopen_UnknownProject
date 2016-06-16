@@ -54,13 +54,7 @@ function Jo_write_error(err) {
 
 //Check if the key syntax is valid
 function Jo_is_key_valid(key) {
-	if (key === undefined || key === null) {
-		return false;
-	}
-	if (String(key).match(/^[-]{1,2}[A-Za-z0-9]+$/)) {
-		return true;
-	}
-	return false;
+	return String(key).match(/^[-]{1,2}[A-Za-z0-9]+$/) || false;
 }
 
 //Check if there are key collisions. WARNING: NO PROTECTION. System use only
@@ -125,6 +119,22 @@ function Jo_find_next_string_index(arr, curr) {
 	return -1;
 }
 
+//Detect if the next meaningful item in arr is string-typed entry
+function Jo_strict_next_string_index(arr, curr) {
+	for (var i = curr+1; i < arr.length; i++) {
+		if (arr[i] === null) {
+			continue;
+		}
+		if (arr[i][1] !== false) {
+			return -1;
+		} else {
+			break;
+		}
+	}
+	return i;
+}
+
+
 //Get the pipe from the stdin
 function Jo_get_pipe() {
 	process.stdin.resume();
@@ -185,7 +195,7 @@ Jo.prototype.add = function (keys, dest, does, help) {
 				Jo_write_error("when adding options, keys cannot be empty\n");
 			}
 			for (var key of keys) {
-				if (Jo_is_key_valid(key) == false) {
+				if (Jo_is_key_valid(key) === false) {
 					Jo_write_error("key name invalid\n");
 				}
 				if (Jo_has_key_collision(this, key)) {
@@ -193,9 +203,12 @@ Jo.prototype.add = function (keys, dest, does, help) {
 				}
 			}
 			jo_obj.keys = keys;
-		} else if (key !== null && key !== undefined && (! isObject(key)) && (! isNaN(key))) {
-			//not null/undefined, not normal object, not NaN
-			jo_obj.keys.push(key);
+		} else if (keys !== null && keys !== undefined && (! isObject(keys))) {
+			//not null/undefined, not normal object
+			if (Jo_is_key_valid(keys) === false) {
+				Jo_write_error("key name invalid\n");
+			}
+			jo_obj.keys.push(keys);
 		} else {
 			Jo_write_error("cannot read keys for new option\n");
 		}
@@ -204,7 +217,7 @@ Jo.prototype.add = function (keys, dest, does, help) {
 	}
 	//Handle dest
 	if (1 in arguments) {
-		if (dest === undefined || dest === null || Array.isArray(dest)) {
+		if (dest == false || isObject(dest) || Array.isArray(dest) || dest !== dest) {
 			Jo_write_error("invalid dest name\n");
 		} else {
 			if (Jo_has_dest_collision(this, dest)) {
@@ -378,11 +391,20 @@ Jo.prototype.parse = function () {
 		
 		if (item[1] === true) {
 			obj_ref = Jo_get_obj_by_key(this, item[0]);
+			
+			if (obj_ref === undefined || obj_ref === null) {
+				Jo_write_error("cannot find option '" + item[0] + "'\n");
+			}
+			
 			if (obj_ref.does === Jo.does.save_num) {
-				var next_index = Jo_find_next_string_index(stdin, i);
+				//var next_index = Jo_find_next_string_index(stdin, i);
+				//if (next_index < 0) {
+				//FIX THE LISTED INFO PROBLEM, e.g. "-b 1 -e 2" != "-b -e 1 2"
+				var next_index = Jo_strict_next_string_index(stdin, i);
 				if (next_index < 0) {
 					Jo_write_error("missing arguments for for option " + item[0] + "\n");
 				}
+				//var num = Number(stdin[next_index][0]);
 				var num = Number(stdin[next_index][0]);
 				if (num !== num) {
 					Jo_write_error("cannot parse number for save_num request\n");
@@ -413,7 +435,10 @@ Jo.prototype.parse = function () {
 				
 				this.vars[obj_ref.dest] = false;
 			} else if (obj_ref.does === Jo.does.save_str) {
-				var next_index = Jo_find_next_string_index(stdin, i);
+				//var next_index = Jo_find_next_string_index(stdin, i);
+				//if (next_index < 0) {
+				//FIX THE LISTED INFO PROBLEM, e.g. "-b 1 -e 2" != "-b -e 1 2"
+				var next_index = Jo_strict_next_string_index(stdin, i);
 				if (next_index < 0) {
 					Jo_write_error("missing arguments for for option " + item[0] + "\n");
 				}
