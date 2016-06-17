@@ -1,0 +1,28 @@
+{
+  "author": "Kevin Kassimo Qian",
+  "name": "jsopen",
+  "version": "0.0.1",
+  "description": "Jsopen option parser--not yet published version.",
+  "keywords": [
+    "jsopen",
+    "version",
+    "author"
+  ],
+  "repository": {
+    "type": "git",
+    "web": "https://github.com/Jsopen/JSopen_optparser"
+  },
+  "bugs": {
+    "url": "https://github.com/Jsopen/JSopen_optparser/issues"
+  },
+  "main": "./jsopen.js",
+  "engines": {
+    "node": ">=0.4.x"
+  },
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
