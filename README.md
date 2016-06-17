@@ -2,7 +2,7 @@
 A small option parser project, currently under further development
 (I made this as my Javascript practice. Thus there may be many bugs in my code. Please help improve the code!)
 
-# Installation
+# Install
 ```bash
 make
 ```
@@ -28,7 +28,13 @@ if (parser.hasvar("dest_byte")) {
 	var input = parser.vars.input;
 }
 ```
+# man page
 For more detailed usage, check the man page by typing
 ```bash
 man jsopen
+```
+
+# uninstall
+```bash
+make clean
 ```
