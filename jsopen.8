@@ -1,0 +1,73 @@
+.TH JSOPEN(8)
+.Dt JSOPEN 8
+.Dd June 17, 2016
+.Nm jsopen
+.Nd JSOpen Option ParsEr with Node
+.Sh NAME
+.Nm
+\-
+A foolish Javascript option parser
+.Sh "SYNTAX"
+.Pp
+\fBThe following code is using Javascript/Node.js\fR
+.Pp
+\fBCreate a new parser\fR
+.Pp
+var jsopen = require('jsopen').parser;
+.Pp
+//jsopen(_parser_message_, _should_be_verbose_default_true)
+.Pp
+var parser = new jsopen("Parser Message", true);
+.Pp
+\fBAdd a new option\fR
+.Pp
+/*Save types:
+.Pp
+jsopen.does.save_num
+.Pp
+jsopen.does.save_true
+.Pp
+jsopen.does.save_false
+.Pp
+jsopen.does.save_str
+.Pp
+*/
+.Pp
+//jsopen.add([a list of options for the same task], _name_of_destination_, _save_type_, _help_message_)
+.Pp
+parser.add(["-o", "--option-name"], "option_dest", jsopen.does.save_num, "Help message");
+.Pp
+.Pp
+\fBParse the input\fR
+.Pp
+parser.parse();
+.Pp
+.Pp
+\fBCheck if option is used by examining the var\fR
+.Pp
+if (parser.hasvar("option_dest")) {
+.Pp
+\fBSave variable\fR
+.Pp
+        var new_var = parser.vars["option_dest"];
+.Pp
+\fBGet remaining dangling inputs (not affiliated with any options)\fR
+.Pp
+        //jsopen.vars.input is a list
+.Pp
+        var other = parser.vars.input;
+.Pp
+}
+.Pp
+.Sh DESCRIPTION
+.Nm
+is a Javascript Option Parser. It is created to imitate the Python Optparse module and served as a Javascript practice for myself. Thus it is highly probable to contain bugs. Please help to improve this script! Thank you!
+
+.Sh "AUTHOR(S)"
+Kevin 'Kassimo' Qian
+.Pp
+Some Foolish Student at UCLA
+.Pp
+Address is currently not available
+.Pp
+Email: kevinkassimo@gmail.com
