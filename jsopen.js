@@ -525,4 +525,8 @@ Jo.prototype.help = function (entry1, entry2, entry3, etc) {
 	}
 }
 
-module.exports = Jo;
+module.exports = {
+	parser: Jo,
+	version: "0.0.1",
+	author: "Kevin Kassimo Qian"
+};
